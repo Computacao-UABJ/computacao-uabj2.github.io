@@ -3,49 +3,30 @@ name: Deploy Hugo site to GitHub Pages
 on:
   push:
     branches:
-      - main   # change if your default branch is not "main"
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
+      - main # Trigger the workflow on pushes to the main branch
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: true  # IMPORTANT for hugo-arcana theme
-          fetch-depth: 0
+          submodules: true  # Checkout any submodules, including the 'arcana' theme if used as one
+          fetch-depth: 0    # Fetch all history for the gh-pages action
 
       - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v3
+        uses: peaceiris/actions-hugo@v2
         with:
-          hugo-version: "latest"
-          extended: true
+          hugo-version: 'latest'
+          extended: true    # The arcana theme uses SCSS/Sass, so the extended version is necessary
 
-      - name: Build
-        run: hugo --minify
+      - name: Build Site
+        run: hugo --minify --baseURL "https://Computacao-UABJ.github.io/computacao-uabj2.github.io/" # Replace with your actual baseURL
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./public
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main' # Only deploy if pushed to main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public             # The directory where Hugo builds the static files
